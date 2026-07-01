@@ -1,0 +1,13 @@
+/node_modules
+/.next
+/out
+/build
+.DS_Store
+*.pem
+npm-debug.log*
+.env*
+.vercel
+/.ui-ux-skill
+/videos case
+/.claude
+
