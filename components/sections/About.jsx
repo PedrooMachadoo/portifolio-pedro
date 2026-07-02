@@ -32,10 +32,10 @@ export function About() {
               />
               <div className="overflow-hidden rounded-[24px] border border-line bg-surface">
                 <Image
-                  src="/pedro.png"
+                  src="/pedro-foto.jpg"
                   alt={t.about.photoAlt}
-                  width={768}
-                  height={1376}
+                  width={1122}
+                  height={1402}
                   priority
                   className="h-auto w-full object-cover"
                   sizes="(max-width: 768px) 100vw, 40vw"
