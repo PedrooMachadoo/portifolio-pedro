@@ -8,7 +8,7 @@ import { ScrubVideo } from "@/components/sections/ScrubVideo";
  * is provided; otherwise falls back to the stylized on-brand mock.
  * Drop recordings in /public/cases and set `video`/`poster` in lib/content.js.
  */
-export function CasePreview({ item, progress }) {
+export function CasePreview({ item }) {
   const url = item.url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
   if (item.video) {
@@ -18,7 +18,6 @@ export function CasePreview({ item, progress }) {
         poster={item.poster}
         url={url}
         theme={item.theme}
-        progress={progress}
       />
     );
   }

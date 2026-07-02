@@ -1,15 +1,16 @@
 "use client";
 
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
-import { ArrowUpRight } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { useRef, useState } from "react";
+import { ArrowUpRight, Plus } from "lucide-react";
 import { useLang } from "@/components/providers/LanguageProvider";
 import { CASES } from "@/lib/content";
 import { Reveal } from "@/components/motion/Reveal";
 import { MaskReveal } from "@/components/motion/MaskReveal";
 import { CasePreview } from "@/components/sections/CasePreview";
+import { CaseModal } from "@/components/sections/CaseModal";
 
-function CaseCard({ item, index }) {
+function CaseCard({ item, index, onOpen }) {
   const { t, locale } = useLang();
   const c = item.i18n[locale];
   const theme = item.theme;
@@ -28,7 +29,7 @@ function CaseCard({ item, index }) {
     <section
       ref={ref}
       id={item.id}
-      className="case-scope rounded-[28px] px-6 py-14 md:px-14 md:py-20"
+      className="case-scope relative rounded-[28px] px-6 py-14 md:px-14 md:py-20"
       style={{
         "--case-bg": theme.bg,
         "--case-surface": theme.surface,
@@ -55,51 +56,74 @@ function CaseCard({ item, index }) {
         </span>
       </div>
 
-      <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
-        {/* Text column */}
-        <div className="order-2 md:order-1">
+      {/* Video is full-bleed and always leads — the focal point of the case */}
+      <Reveal y={30}>
+        <motion.div style={{ y }}>
+          <CasePreview item={item} />
+        </motion.div>
+      </Reveal>
+
+      {/* Secondary content: single column below the video, in reading order
+          (logo → texto → badges → botão) on every breakpoint — clean, one line of focus. */}
+      <div className="mt-8 max-w-2xl md:mt-12">
+        {item.logo ? (
+          <Reveal y={20}>
+            <h3 className="sr-only">{item.name}</h3>
+            <img
+              src={item.logo}
+              alt={item.name}
+              loading="lazy"
+              className={`h-auto w-auto max-w-[min(88%,280px)] object-contain object-left ${item.logoClass || "max-h-[72px] md:max-h-[88px]"}`}
+            />
+          </Reveal>
+        ) : (
           <MaskReveal
             as="h3"
             lines={[item.name]}
-            className="font-display font-semibold leading-[1.02] tracking-[-0.02em]"
-            lineClassName="text-[clamp(2.25rem,6vw,4rem)]"
+            className="font-display font-semibold leading-[1.03] tracking-[-0.02em]"
+            lineClassName="text-[clamp(1.9rem,4.2vw,3.15rem)]"
           />
-          <p
-            className="mt-3 font-display text-[clamp(1.1rem,2.2vw,1.5rem)] font-normal"
-            style={{ color: theme.ink2 }}
-          >
-            {c.title}
-          </p>
+        )}
+        <p
+          className="mt-3 font-display text-[clamp(1.05rem,2vw,1.4rem)] font-normal"
+          style={{ color: theme.ink2 }}
+        >
+          {c.title}
+        </p>
 
-          <div className="mt-8 space-y-5">
-            <DetailRow label={t.works.problemLabel} value={c.problem} theme={theme} />
-            <DetailRow label={t.works.roleLabel} value={c.role} theme={theme} />
-            <DetailRow label={t.works.resultLabel} value={c.result} theme={theme} accent />
-          </div>
+        <div className="mt-8 space-y-5">
+          <DetailRow label={t.works.problemLabel} value={c.problem} theme={theme} />
+          <DetailRow label={t.works.roleLabel} value={c.role} theme={theme} />
+          <DetailRow label={t.works.resultLabel} value={c.result} theme={theme} accent />
+        </div>
 
-          {/* Tags */}
-          <div className="mt-7 flex flex-wrap gap-2">
-            {c.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full px-3 py-1 text-xs font-medium"
-                style={{
-                  border: `1px solid color-mix(in srgb, ${theme.ink} 15%, transparent)`,
-                  color: theme.ink2,
-                }}
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
+        {/* Tags */}
+        <div className="mt-7 flex flex-wrap gap-2">
+          {c.tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full px-3 py-1 text-xs font-medium"
+              style={{
+                border: `1px solid color-mix(in srgb, ${theme.ink} 15%, transparent)`,
+                color: theme.ink2,
+              }}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
 
-          {/* CTA */}
+        {/* Actions */}
+        <div className="mt-9 flex flex-wrap items-center gap-3">
           <a
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group mt-9 inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-medium transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98]"
-            style={{ background: theme.accent, color: "#fff" }}
+            className="group inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-medium transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98]"
+            style={{
+              background: theme.cta || theme.accent,
+              color: theme.ctaInk || theme.onAccent || "#fff",
+            }}
           >
             {t.works.view}
             <ArrowUpRight
@@ -107,15 +131,22 @@ function CaseCard({ item, index }) {
               className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
             />
           </a>
-        </div>
 
-        {/* Preview column with subtle parallax */}
-        <div className="order-1 md:order-2">
-          <Reveal y={30}>
-            <motion.div style={{ y }}>
-              <CasePreview item={item} progress={scrollYProgress} />
-            </motion.div>
-          </Reveal>
+          <button
+            type="button"
+            onClick={onOpen}
+            className="group inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-medium transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98]"
+            style={{
+              border: `1px solid color-mix(in srgb, ${theme.ink} 22%, transparent)`,
+              color: theme.ink,
+            }}
+          >
+            {t.works.learnMore}
+            <Plus
+              size={16}
+              className="transition-transform duration-300 group-hover:rotate-90"
+            />
+          </button>
         </div>
       </div>
     </section>
@@ -140,6 +171,8 @@ function DetailRow({ label, value, theme, accent }) {
 
 export function Works() {
   const { t } = useLang();
+  const [openId, setOpenId] = useState(null);
+  const openCase = CASES.find((c) => c.id === openId) || null;
 
   return (
     <section id="works" className="section scroll-mt-20">
@@ -151,15 +184,15 @@ export function Works() {
           <span className="mono-label">{t.works.label}</span>
         </Reveal>
 
-        <div className="mb-14 flex flex-col gap-6 md:mb-20 md:flex-row md:items-end md:justify-between">
+        <div className="mb-14 grid gap-6 md:mb-20 md:grid-cols-12 md:items-start md:gap-8">
           <MaskReveal
             as="h2"
             lines={[t.works.title]}
-            className="font-display font-semibold leading-[1.02] tracking-[-0.02em]"
+            className="font-display font-semibold leading-[1.02] tracking-[-0.02em] md:col-span-7"
             lineClassName="text-[clamp(2.25rem,6vw,4.25rem)]"
           />
-          <Reveal delay={0.1}>
-            <p className="max-w-[44ch] text-[0.975rem] leading-relaxed text-ink-2">
+          <Reveal delay={0.1} className="md:col-span-5 md:pt-2">
+            <p className="max-w-[42ch] text-[0.975rem] leading-relaxed text-ink-2 md:ml-auto">
               {t.works.subtitle}
             </p>
           </Reveal>
@@ -168,10 +201,14 @@ export function Works() {
         {/* Cases */}
         <div className="flex flex-col gap-8 md:gap-12">
           {CASES.map((item, i) => (
-            <CaseCard key={item.id} item={item} index={i} />
+            <CaseCard key={item.id} item={item} index={i} onOpen={() => setOpenId(item.id)} />
           ))}
         </div>
       </div>
+
+      <AnimatePresence>
+        {openCase && <CaseModal item={openCase} onClose={() => setOpenId(null)} />}
+      </AnimatePresence>
     </section>
   );
 }
